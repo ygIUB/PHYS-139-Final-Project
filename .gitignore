@@ -1,1 +1,6 @@
 cem_mitolab/
+*.hdf5
+venv/
+.venv/
+env/
+ENV/
