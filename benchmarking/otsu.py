@@ -1,1 +1,0 @@
-# This is the implementation for Otsu's threshold method
