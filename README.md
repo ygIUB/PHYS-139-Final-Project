@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # MoDL
 Mitochondrial segmentation and function prediction in live-cell images with deep learning
 
@@ -127,3 +128,6 @@ Implement new features or fix existing issues by creating a pull request.
 ##License
 This project is covered under the GNU General Public 3.0 License.
 
+=======
+# PHYS-139-Final-Project
+>>>>>>> 036f89d0c6bd028ad9488d78fe58dbb397884c4d

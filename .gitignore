@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Python cache
 __pycache__/
 *.pyc
@@ -31,3 +32,11 @@ testraw/
 .vscode/
 .idea/
 *.swp
+=======
+cem_mitolab/
+*.hdf5
+venv/
+.venv/
+env/
+ENV/
+>>>>>>> 036f89d0c6bd028ad9488d78fe58dbb397884c4d
