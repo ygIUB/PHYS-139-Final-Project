@@ -1,0 +1,44 @@
+{
+  "mean_area": {
+    "pearson_r": 0.20730399301100044,
+    "p_value": 0.003225277809602626,
+    "significant": true,
+    "n_samples": 200
+  },
+  "count": {
+    "pearson_r": 0.6682041406032164,
+    "p_value": 3.121717725488843e-27,
+    "significant": true,
+    "n_samples": 200
+  },
+  "mean_perimeter": {
+    "pearson_r": 0.19478743487628225,
+    "p_value": 0.00571030154411764,
+    "significant": true,
+    "n_samples": 200
+  },
+  "mean_eccentricity": {
+    "pearson_r": -0.08792199389604295,
+    "p_value": 0.21571235585077933,
+    "significant": false,
+    "n_samples": 200
+  },
+  "mean_form_factor": {
+    "pearson_r": -0.1957784604110554,
+    "p_value": 0.0054642657259095185,
+    "significant": true,
+    "n_samples": 200
+  },
+  "mean_aspect_ratio": {
+    "pearson_r": 0.03643938084280493,
+    "p_value": 0.6084615467504404,
+    "significant": false,
+    "n_samples": 200
+  },
+  "mean_solidity": {
+    "pearson_r": -0.19724528691335985,
+    "p_value": 0.005117519598385521,
+    "significant": true,
+    "n_samples": 200
+  }
+}
