@@ -1,0 +1,33 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual envs
+venv/
+.venv/
+env/
+modl-gpu/
+modl-gpu-win/
+
+# Big data & generated outputs
+cem_mitolab/
+deform/
+deform_split/
+final_results/
+model/
+npydata/
+qa/
+results/
+test/
+testraw/
+
+# Jupyter / temp
+*.ipynb_checkpoints/
+*.log
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
