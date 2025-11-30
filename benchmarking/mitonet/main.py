@@ -1,8 +1,3 @@
-"""
-Mitochondrial Segmentation Benchmark - MitoNet Method
-EM-specific deep learning segmentation using empanada
-"""
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -236,11 +231,21 @@ class MitoNetSegmentation:
         
         # Run inference
         with torch.no_grad():
-            # Model returns tuple: (semantic_output, instance_output)
+            # Model returns a dict with 'instances' and 'sem_seg' keys
             output = self.model(image_tensor)
             
-            # Get semantic segmentation (first output)
-            if isinstance(output, tuple):
+            # Handle different output formats
+            if isinstance(output, dict):
+                # Try to get semantic segmentation
+                if 'sem_seg' in output:
+                    semantic = output['sem_seg']
+                elif 'semantic' in output:
+                    semantic = output['semantic']
+                else:
+                    # Use first value in dict
+                    semantic = list(output.values())[0]
+            elif isinstance(output, tuple):
+                # Get first output
                 semantic = output[0]
             else:
                 semantic = output
