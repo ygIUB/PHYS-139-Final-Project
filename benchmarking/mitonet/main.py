@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 from tqdm import tqdm
-import pandas as p
+import pandas as pd
 from PIL import Image
 from typing import Dict, List, Tuple
 import json
@@ -135,44 +135,54 @@ class MitoNetSegmentation:
         """
         self.model_name = model_name
         self.use_quantized = use_quantized
-        self.engine = None
+        self.model = None
+        self.device = 'cpu'  # Force CPU for Mac
         self.load_model()
     
     def load_model(self):
         """Load the MitoNet model"""
         print(f"Loading MitoNet model: {self.model_name}")
         print(f"  Quantized (CPU optimized): {self.use_quantized}")
+        print(f"  Using CPU")
         
         try:
-            from empanada.inference import engines
+            import urllib.request
+            from pathlib import Path
             
-            # Determine device
-            if torch.cuda.is_available() and not self.use_quantized:
-                print("  Using GPU")
-                device = 'cuda'
-            else:
-                print("  Using CPU")
-                device = 'cpu'
-            
-            # Load the inference engine with the model
-            # Empanada will automatically download the model if not present
-            model_config = {
-                'model_name': self.model_name,
-                'use_quantized': self.use_quantized,
-                'nms_threshold': 0.1,
-                'nms_kernel': 3,
-                'confidence_thr': 0.3,
-                'median_kernel_size': 5,
-                'min_size': 100,
-                'min_span': 4,
-                'downsample_f': 1,
-                'num_workers': 0,
+            # Model URLs from Zenodo
+            model_urls = {
+                'MitoNet_v1': {
+                    'full': 'https://zenodo.org/record/6861565/files/MitoNet_v1.pth',
+                    'quantized': 'https://zenodo.org/record/6861565/files/MitoNet_v1_quantized.pth'
+                },
+                'MitoNet_v1_mini': {
+                    'full': 'https://zenodo.org/record/6861565/files/MitoNet_v1_mini.pth',
+                    'quantized': 'https://zenodo.org/record/6861565/files/MitoNet_v1_mini_quantized.pth'
+                }
             }
             
-            # Create the engine
-            self.engine = engines.PanopticDeepLabRenderEngine(
-                **model_config
-            )
+            # Determine which model to use
+            model_type = 'quantized' if self.use_quantized else 'full'
+            model_url = model_urls[self.model_name][model_type]
+            
+            # Create model cache directory
+            cache_dir = Path.home() / '.empanada' / 'models'
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            
+            model_filename = f"{self.model_name}{'_quantized' if self.use_quantized else ''}.pth"
+            model_path = cache_dir / model_filename
+            
+            # Download model if not cached
+            if not model_path.exists():
+                print(f"  Downloading model from {model_url}...")
+                urllib.request.urlretrieve(model_url, model_path)
+                print(f"  ✓ Model downloaded to {model_path}")
+            else:
+                print(f"  ✓ Using cached model from {model_path}")
+            
+            # Load the torchscript model
+            self.model = torch.jit.load(str(model_path), map_location=self.device)
+            self.model.eval()
             
             print(f"✓ Model loaded successfully")
             
@@ -200,15 +210,50 @@ class MitoNetSegmentation:
             else:
                 image = image.astype(np.uint8)
         
+        # Store original size
+        orig_h, orig_w = image.shape
+        
+        # MitoNet expects 128x multiple dimensions
+        # Pad to nearest 128 multiple
+        pad_h = (128 - orig_h % 128) % 128
+        pad_w = (128 - orig_w % 128) % 128
+        
+        if pad_h > 0 or pad_w > 0:
+            image_padded = np.pad(image, ((0, pad_h), (0, pad_w)), mode='reflect')
+        else:
+            image_padded = image
+        
+        # Normalize to 0-1
+        image_norm = image_padded.astype(np.float32) / 255.0
+        
+        # Add batch and channel dimensions: (1, 1, H, W)
+        image_tensor = torch.from_numpy(image_norm).unsqueeze(0).unsqueeze(0)
+        
         # Run inference
-        # Returns instance segmentation where each object has unique ID
-        instances = self.engine.infer(image)
+        with torch.no_grad():
+            # Model returns tuple: (semantic_output, instance_output)
+            output = self.model(image_tensor)
+            
+            # Get semantic segmentation (first output)
+            if isinstance(output, tuple):
+                semantic = output[0]
+            else:
+                semantic = output
+            
+            # Apply sigmoid and threshold
+            prob = torch.sigmoid(semantic)
+            binary = (prob > 0.5).float()
         
-        # Convert instance segmentation to binary mask
-        # (any instance > 0 becomes 1)
-        binary_mask = (instances > 0).astype(np.uint8)
+        # Convert back to numpy
+        mask = binary.squeeze().cpu().numpy()
         
-        return binary_mask
+        # Remove padding
+        mask = mask[:orig_h, :orig_w]
+        
+        # Convert to uint8
+        mask = mask.astype(np.uint8)
+        
+        return mask
 
 
 class MitochondriaDataset:
