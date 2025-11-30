@@ -1,3 +1,8 @@
+"""
+Mitochondrial Segmentation Benchmark - MitoNet Method
+EM-specific deep learning segmentation using empanada
+"""
+
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -331,7 +336,8 @@ class BenchmarkRunner:
         print(f"Total samples: {self.dataset.total_samples()}")
         
         # Initialize segmentation method
-        mitonet = MitoNetSegmentation(model_name='MitoNet_v1_mini', use_quantized=True)
+        # Use non-quantized for Mac compatibility
+        mitonet = MitoNetSegmentation(model_name='MitoNet_v1_mini', use_quantized=False)
         metrics_calc = SegmentationMetrics()
         morph_features = MorphologicalFeatures()
         
@@ -651,7 +657,7 @@ class BenchmarkRunner:
         if n_samples == 1:
             axes = axes.reshape(1, -1)
         
-        mitonet = MitoNetSegmentation(model_name='MitoNet_v1_mini', use_quantized=True)
+        mitonet = MitoNetSegmentation(model_name='MitoNet_v1_mini', use_quantized=False)
         
         for idx, result_idx in enumerate(sample_indices):
             result = self.results[result_idx]
