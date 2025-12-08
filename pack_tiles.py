@@ -1,15 +1,10 @@
-# pack_tiles.py
-# 遍历 cem_mitolab/*/images + cem_mitolab/*/masks
-# 读 .tif/.tiff/.png，灰度化 -> (H,W,1)，pad/crop 到 512x512
-# 输出 npydata/imgs_train.npy & npydata/imgs_mask_train.npy
-
 import sys
 from pathlib import Path
 import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
-DATA_ROOT = ROOT / "cem_mitolab"   # 你的数据总目录
+DATA_ROOT = ROOT / "cem_mitolab"
 OUTDIR = ROOT / "npydata"
 OUTDIR.mkdir(exist_ok=True, parents=True)
 
@@ -25,7 +20,6 @@ def read_gray_hw1(path: Path) -> np.ndarray:
     if a.ndim == 2:
         a = a[..., None]
     elif a.ndim == 3:
-        # 如果是 (H, W, C)，取第一通道
         a = a[..., 0:1]
     return a
 
@@ -50,7 +44,6 @@ def collect_pairs(data_root: Path):
     Xs, Ys = [], []
     total, bad = 0, 0
 
-    # 遍历每个 case 子目录
     for case_dir in sorted(data_root.iterdir()):
         if not case_dir.is_dir():
             continue
@@ -58,16 +51,14 @@ def collect_pairs(data_root: Path):
         img_dir = case_dir / "images"
         msk_dir = case_dir / "masks"
         if not (img_dir.exists() and msk_dir.exists()):
-            # 有的子目录可能不是数据，直接跳过
             continue
 
-        # 以 mask 目录建立索引：stem -> Path
+
         mindex = {
             p.stem: p for p in msk_dir.iterdir()
             if p.is_file() and p.suffix.lower() in EXTS
         }
 
-        # 在 images 目录里找与之同名的图像
         img_paths = [
             p for p in img_dir.iterdir()
             if p.is_file() and p.suffix.lower() in EXTS and p.stem in mindex
@@ -82,7 +73,6 @@ def collect_pairs(data_root: Path):
             try:
                 im = fit512(read_gray_hw1(ip))
                 mk = fit512(read_gray_hw1(mp))
-                # 非 0 当作前景，二值化到 {0,255}
                 mk = (mk > 0).astype(np.uint8) * 255
                 Xs.append(im)
                 Ys.append(mk)

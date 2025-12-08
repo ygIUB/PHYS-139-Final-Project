@@ -1,18 +1,4 @@
-<<<<<<< HEAD
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Virtual envs
-venv/
-.venv/
-env/
-modl-gpu/
-modl-gpu-win/
-
-# Big data & generated outputs
+# --- Data / large artifacts ---
 cem_mitolab/
 deform/
 deform_split/
@@ -24,19 +10,26 @@ results/
 test/
 testraw/
 
-# Jupyter / temp
-*.ipynb_checkpoints/
-*.log
-
-# IDE / editor
-.vscode/
-.idea/
-*.swp
-=======
-cem_mitolab/
+# --- Model / checkpoints ---
 *.hdf5
+*.h5
+*.keras
+
+# --- Virtual environments ---
 venv/
 .venv/
 env/
 ENV/
->>>>>>> 036f89d0c6bd028ad9488d78fe58dbb397884c4d
+modl-gpu/
+modl-gpu-win/
+
+# --- Python cache ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.swp

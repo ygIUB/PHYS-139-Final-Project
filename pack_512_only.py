@@ -1,14 +1,10 @@
-# pack_512_only.py
-# 遍历 cem_mitolab/*/images + cem_mitolab/*/masks
-# 只保留 (H,W) == (512,512) 的图像 / mask，对应成对后直接存成 npy
-
 import sys
 from pathlib import Path
 import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
-DATA_ROOT = ROOT / "cem_mitolab"   # 你的数据总目录
+DATA_ROOT = ROOT / "cem_mitolab"
 OUTDIR = ROOT / "npydata"
 OUTDIR.mkdir(exist_ok=True, parents=True)
 
@@ -65,7 +61,6 @@ def collect_pairs_512(data_root: Path):
                     skipped_size += 1
                     continue
 
-                # reshape -> (H,W,1)，mask 二值化为 {0,255}
                 im = im[..., None]
                 mk = (mk > 0).astype(np.uint8)[..., None] * 255
 
