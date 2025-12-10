@@ -24,6 +24,20 @@ plt.rcParams['figure.dpi'] = 150
 # Suppress TensorFlow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+# Check GPU availability
+print("=" * 60)
+print("CHECKING GPU AVAILABILITY")
+print("=" * 60)
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    print(f"✓ Found {len(gpus)} GPU(s):")
+    for gpu in gpus:
+        print(f"  - {gpu.name}")
+    print("TensorFlow will use GPU for inference")
+else:
+    print("⚠ No GPU found - will use CPU (slower)")
+print("=" * 60 + "\n")
+
 
 class ValidationBenchmark:
     """Benchmark model on validation set from training split"""

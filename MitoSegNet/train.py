@@ -13,6 +13,28 @@ from architecture import build_mitosegnet, dice_coefficient
 # Suppress TensorFlow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+# Check GPU availability
+print("\n" + "=" * 60)
+print("CHECKING GPU AVAILABILITY")
+print("=" * 60)
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    print(f"✓ Found {len(gpus)} GPU(s):")
+    for gpu in gpus:
+        print(f"  - {gpu.name}")
+    print("TensorFlow will use GPU for training")
+    # Enable memory growth to avoid OOM
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        print("✓ GPU memory growth enabled")
+    except RuntimeError as e:
+        print(f"⚠ Could not enable memory growth: {e}")
+else:
+    print("⚠ No GPU found - will use CPU (much slower)")
+    print("Training on CPU may take several hours!")
+print("=" * 60 + "\n")
+
 
 class MitoSegNetTrainer:
     """Trainer class for MitoSegNet model"""
