@@ -1,6 +1,5 @@
 """
 Data loader for MitoSegNet training and evaluation
-Follows the same pattern as MoDL_seg/data_load.py
 """
 
 import os
