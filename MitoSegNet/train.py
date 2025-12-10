@@ -1,6 +1,5 @@
 """
 Training script for MitoSegNet on EM data
-Follows the same pattern as MoDL_seg/train.py
 """
 
 import os
@@ -10,7 +9,6 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 from architecture import build_mitosegnet, dice_coefficient
-from data_loader import DataLoader
 
 # Suppress TensorFlow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -112,7 +110,8 @@ class MitoSegNetTrainer:
         N = imgs.shape[0]
         val_size = int(N * val_ratio)
 
-        rng = np.random.default_rng(seed=seed)
+        # Use seed=123 to match MoDL_seg implementation
+        rng = np.random.default_rng(seed=123)
         indices = rng.permutation(N)
 
         val_idx = indices[:val_size]
@@ -123,8 +122,7 @@ class MitoSegNetTrainer:
         X_val = imgs[val_idx]
         Y_val = masks[val_idx]
 
-        print(f"\nTrain samples: {X_train.shape[0]}")
-        print(f"Validation samples: {X_val.shape[0]}")
+        print(f"train: {X_train.shape[0]}  val: {X_val.shape[0]}")
 
         return X_train, Y_train, X_val, Y_val
 
@@ -201,28 +199,27 @@ class MitoSegNetTrainer:
 
         # Callbacks
         checkpoint_path = os.path.join(output_dir, "mitosegnet_best.keras")
-        callbacks = [
-            ModelCheckpoint(
-                checkpoint_path,
-                monitor='val_loss',
-                verbose=1,
-                save_best_only=True,
-                mode='min'
-            ),
-            EarlyStopping(
-                monitor='val_loss',
-                patience=10,
-                verbose=1,
-                restore_best_weights=True
-            ),
-            ReduceLROnPlateau(
-                monitor='val_loss',
-                factor=0.5,
-                patience=5,
-                verbose=1,
-                min_lr=1e-7
-            )
-        ]
+        model_checkpoint = ModelCheckpoint(
+            checkpoint_path,
+            monitor='val_loss',
+            verbose=1,
+            save_best_only=True
+        )
+
+        early_stopping = EarlyStopping(
+            monitor='val_loss',
+            patience=10,
+            verbose=1,
+            restore_best_weights=True
+        )
+
+        reduce_lr = ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.5,
+            patience=5,
+            min_lr=1e-7,
+            verbose=1
+        )
 
         # Train model
         print(f"\nStarting training...")
@@ -237,7 +234,7 @@ class MitoSegNetTrainer:
             epochs=epochs,
             verbose=1,
             validation_data=val_ds,
-            callbacks=callbacks
+            callbacks=[model_checkpoint, early_stopping, reduce_lr]
         )
 
         end_time = datetime.datetime.now()
@@ -274,61 +271,60 @@ class MitoSegNetTrainer:
         val_acc = history.history['val_accuracy']
         loss = history.history['loss']
         val_loss = history.history['val_loss']
-        epochs = range(1, len(acc) + 1)
+        epochs = range(1, len(acc) + 1)  # 1-indexed epochs
 
-        # Create figure with two subplots
+        # Combined plot
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
-        # Accuracy plot
+        # Accuracy subplot
         ax1.plot(epochs, acc, 'b-', label='Training Accuracy', linewidth=2)
         ax1.plot(epochs, val_acc, 'r--', label='Validation Accuracy', linewidth=2)
-        ax1.set_title('Training and Validation Accuracy', fontsize=14, fontweight='bold')
+        ax1.set_title('Model Accuracy', fontsize=14, fontweight='bold')
         ax1.set_xlabel('Epoch', fontsize=12)
         ax1.set_ylabel('Accuracy', fontsize=12)
-        ax1.legend(fontsize=10)
+        ax1.legend(loc='lower right', fontsize=10)
         ax1.grid(True, alpha=0.3)
 
-        # Loss plot
+        # Loss subplot
         ax2.plot(epochs, loss, 'b-', label='Training Loss', linewidth=2)
         ax2.plot(epochs, val_loss, 'r--', label='Validation Loss', linewidth=2)
-        ax2.set_title('Training and Validation Loss', fontsize=14, fontweight='bold')
+        ax2.set_title('Model Loss', fontsize=14, fontweight='bold')
         ax2.set_xlabel('Epoch', fontsize=12)
         ax2.set_ylabel('Loss', fontsize=12)
-        ax2.legend(fontsize=10)
+        ax2.legend(loc='upper right', fontsize=10)
         ax2.grid(True, alpha=0.3)
 
         plt.tight_layout()
-
-        # Save plots
-        acc_path = os.path.join(output_dir, 'training_accuracy.png')
-        loss_path = os.path.join(output_dir, 'training_loss.png')
         combined_path = os.path.join(output_dir, 'training_curves.png')
-
-        plt.savefig(combined_path, dpi=300, bbox_inches='tight')
+        plt.savefig(combined_path, dpi=150, bbox_inches='tight')
         print(f"  Saved: {combined_path}")
+        plt.close()
 
-        # Save individual plots
-        fig1, ax = plt.subplots(figsize=(8, 6))
-        ax.plot(epochs, acc, 'b-', label='Training Accuracy', linewidth=2)
-        ax.plot(epochs, val_acc, 'r--', label='Validation Accuracy', linewidth=2)
-        ax.set_title('Accuracy', fontsize=14, fontweight='bold')
-        ax.set_xlabel('Epoch', fontsize=12)
-        ax.set_ylabel('Accuracy', fontsize=12)
-        ax.legend(fontsize=10)
-        ax.grid(True, alpha=0.3)
-        plt.savefig(acc_path, dpi=300, bbox_inches='tight')
+        # Individual accuracy plot
+        plt.figure(figsize=(10, 6))
+        plt.plot(epochs, acc, 'b-', label='Training Accuracy', linewidth=2)
+        plt.plot(epochs, val_acc, 'r--', label='Validation Accuracy', linewidth=2)
+        plt.title('Model Accuracy', fontsize=14, fontweight='bold')
+        plt.xlabel('Epoch', fontsize=12)
+        plt.ylabel('Accuracy', fontsize=12)
+        plt.legend(loc='lower right', fontsize=10)
+        plt.grid(True, alpha=0.3)
+        acc_path = os.path.join(output_dir, 'training_accuracy.png')
+        plt.savefig(acc_path, dpi=150, bbox_inches='tight')
         print(f"  Saved: {acc_path}")
         plt.close()
 
-        fig2, ax = plt.subplots(figsize=(8, 6))
-        ax.plot(epochs, loss, 'b-', label='Training Loss', linewidth=2)
-        ax.plot(epochs, val_loss, 'r--', label='Validation Loss', linewidth=2)
-        ax.set_title('Loss', fontsize=14, fontweight='bold')
-        ax.set_xlabel('Epoch', fontsize=12)
-        ax.set_ylabel('Loss', fontsize=12)
-        ax.legend(fontsize=10)
-        ax.grid(True, alpha=0.3)
-        plt.savefig(loss_path, dpi=300, bbox_inches='tight')
+        # Individual loss plot
+        plt.figure(figsize=(10, 6))
+        plt.plot(epochs, loss, 'b-', label='Training Loss', linewidth=2)
+        plt.plot(epochs, val_loss, 'r--', label='Validation Loss', linewidth=2)
+        plt.title('Model Loss', fontsize=14, fontweight='bold')
+        plt.xlabel('Epoch', fontsize=12)
+        plt.ylabel('Loss', fontsize=12)
+        plt.legend(loc='upper right', fontsize=10)
+        plt.grid(True, alpha=0.3)
+        loss_path = os.path.join(output_dir, 'training_loss.png')
+        plt.savefig(loss_path, dpi=150, bbox_inches='tight')
         print(f"  Saved: {loss_path}")
         plt.close()
 
@@ -348,21 +344,31 @@ class MitoSegNetTrainer:
             f.write("MITOSEGNET TRAINING SUMMARY\n")
             f.write("=" * 60 + "\n\n")
 
-            f.write(f"Training Time: {training_time}\n\n")
+            f.write(f"Training time: {training_time}\n\n")
 
             f.write("Final Metrics:\n")
-            f.write(f"  Training Loss: {history.history['loss'][-1]:.6f}\n")
-            f.write(f"  Training Accuracy: {history.history['accuracy'][-1]:.6f}\n")
-            f.write(f"  Validation Loss: {history.history['val_loss'][-1]:.6f}\n")
+            f.write(f"  Training Loss:       {history.history['loss'][-1]:.6f}\n")
+            f.write(f"  Training Accuracy:   {history.history['accuracy'][-1]:.6f}\n")
+            f.write(f"  Validation Loss:     {history.history['val_loss'][-1]:.6f}\n")
             f.write(f"  Validation Accuracy: {history.history['val_accuracy'][-1]:.6f}\n\n")
 
             f.write("Best Metrics:\n")
-            f.write(f"  Best Validation Loss: {min(history.history['val_loss']):.6f}\n")
+            f.write(f"  Best Training Loss:       {min(history.history['loss']):.6f}\n")
+            f.write(f"  Best Training Accuracy:   {max(history.history['accuracy']):.6f}\n")
+            f.write(f"  Best Validation Loss:     {min(history.history['val_loss']):.6f}\n")
             f.write(f"  Best Validation Accuracy: {max(history.history['val_accuracy']):.6f}\n\n")
 
-            f.write(f"Total Epochs: {len(history.history['loss'])}\n")
+            # If Dice coefficient is in history
+            if 'dice_coefficient' in history.history:
+                f.write("Dice Coefficient:\n")
+                f.write(f"  Training:   {history.history['dice_coefficient'][-1]:.6f}\n")
+                f.write(f"  Validation: {history.history['val_dice_coefficient'][-1]:.6f}\n")
+                f.write(f"  Best Training:   {max(history.history['dice_coefficient']):.6f}\n")
+                f.write(f"  Best Validation: {max(history.history['val_dice_coefficient']):.6f}\n\n")
 
-        print(f"\nTraining summary saved to: {summary_path}")
+            f.write("=" * 60 + "\n")
+
+        print(f"Training summary saved to: {summary_path}")
 
 
 def main():
