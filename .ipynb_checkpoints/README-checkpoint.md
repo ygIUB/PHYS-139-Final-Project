@@ -30,17 +30,16 @@ PHYS-139-Final-Project/
 ## Requirements
 The minimal requirements for this setup is unknown but the machine running our model had the specifications as follows.
 
-OS: Windows 11
-Python: 3.10 (Conda env: modl-gpu-win)
-GPU: NVIDIA RTX 5080 (16 GB VRAM) + integrated AMD GPU
-RAM: 32 GB
+OS: Windows 11 <br>
+Python: 3.10 (Conda env: modl-gpu-win) <br>
+GPU: NVIDIA RTX 5080 (16 GB VRAM) + integrated AMD GPU <br>
+RAM: 32 GB <br>
 Framework: TensorFlow 2.10 + tensorflow-directml-plugin (so TF runs on GPU via DirectML)
 
 ## Installation
 To install and run our model, the GitHub Repository can be cloned and the essential requirements can be installed according to the environment using <br>
 1. ```git clone git@github.com:ygIUB/PHYS-139-Final-Project```
 2. ```pip install -r requirements.txt```
-3. 
 
 ## Usage
 (How to run code, scripts, or notebooks — with examples)
