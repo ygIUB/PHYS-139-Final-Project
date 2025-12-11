@@ -25,7 +25,6 @@ PHYS-139-Final-Project/
 - [Installation](#installation)
 - [Usage](#usage)
 - [Data](#data)
-- [Results](#results)
 
 ## Requirements
 The minimal requirements for this setup is unknown but the machine running our model had the specifications as follows.
@@ -39,15 +38,35 @@ Framework: TensorFlow 2.10 + tensorflow-directml-plugin (so TF runs on GPU via D
 ## Installation
 To install and run our model, the GitHub Repository can be cloned and the essential requirements can be installed according to the environment using <br>
 1. ```git clone git@github.com:ygIUB/PHYS-139-Final-Project```
-2. ```pip install -r requirements.txt```
+2. ```cd PHYS-139-Final-Project
+3. ```conda create -n modl-gpu-win```
+4. ```conda activate modl-gpu-win```
+5. ```pip install --upgrade pip```
+3. ```pip install -r requirements.txt```
+
+The dataset must be placed in the directory PHYS-139-Final-Project/cen_mitolab/*/images/. Please notice that you require Anaconda or Miniconda as a prerequisite.
+You may found your result in folder model/...
 
 ## Usage
-(How to run code, scripts, or notebooks — with examples)
+In your Environment, you first need to run <br>
+```python pack_512_only.py``` <br>
+
+This picks and pairs all the 512x512 images from the dataset. 
+
+Please make sure at the bottom of Modl_seg/train.py you have
+```
+if __name__ == '__main__':
+    myunet = myUnet(model_type="baseline") or 'our'; 'baseline' means ResUnet and 'our' refers to OurResUnet
+    myunet.train
+```
+
+Then, you can directly train with train.py as<br>
+```python train.py```<br>
+
+The result of the model would be stored in folder **model/**
 
 ## Data
 The Project's dataset has been referenced in the GitHub repository. It is saved in the form of a .zip file in a Google Drive. The link is [here](https://drive.google.com/file/d/1ZmZ1RG796ClDXdjM_TKP6RGAd-pNKZfH/view?usp=drive_link).
 
-A good way to procure the dataset would be to directly download it and then unzip it in the desired directory. \\
-```unzip cem-mitolab.zip -d /extracted```
-
-## Results
+A good way to procure the dataset would be to directly download it and then unzip it. <br>
+```unzip cem-mitolab.zip```
