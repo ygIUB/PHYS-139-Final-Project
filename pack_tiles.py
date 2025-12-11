@@ -41,7 +41,6 @@ def collect_pairs(data_root: Path):
     Xs, Ys = [], []
     total, bad = 0, 0
 
-    # 遍历每个 case 子目录
     for case_dir in sorted(data_root.iterdir()):
         if not case_dir.is_dir():
             continue
@@ -49,16 +48,14 @@ def collect_pairs(data_root: Path):
         img_dir = case_dir / "images"
         msk_dir = case_dir / "masks"
         if not (img_dir.exists() and msk_dir.exists()):
-            # 有的子目录可能不是数据，直接跳过
             continue
 
-        # 以 mask 目录建立索引：stem -> Path
+
         mindex = {
             p.stem: p for p in msk_dir.iterdir()
             if p.is_file() and p.suffix.lower() in EXTS
         }
 
-        # 在 images 目录里找与之同名的图像
         img_paths = [
             p for p in img_dir.iterdir()
             if p.is_file() and p.suffix.lower() in EXTS and p.stem in mindex
@@ -73,7 +70,6 @@ def collect_pairs(data_root: Path):
             try:
                 im = fit512(read_gray_hw1(ip))
                 mk = fit512(read_gray_hw1(mp))
-                # 非 0 当作前景，二值化到 {0,255}
                 mk = (mk > 0).astype(np.uint8) * 255
                 Xs.append(im)
                 Ys.append(mk)

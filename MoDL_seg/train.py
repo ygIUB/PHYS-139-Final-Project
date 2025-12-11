@@ -17,23 +17,27 @@ from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import load_model
 from data_load import *
+from ourResUnet import build_our_resunet
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
 class myUnet(object):
-   def __init__(self, img_rows = 512, img_cols = 512):
+   def __init__(self, img_rows = 512, img_cols = 512, model_type="baseline"):
       self.img_rows = img_rows
       self.img_cols = img_cols
+      self.model_type = model_type   # "baseline" or "our"
 
    def load_data(self):
       mydata = DataProcess(self.img_rows, self.img_cols)
       imgs_train, imgs_mask_train = mydata.load_train_data()
       return imgs_train, imgs_mask_train
 
+   def get_our_resunet(self):
+      return build_our_resunet(input_shape=(self.img_rows, self.img_cols, 1))
+
    def get_unet(self):
       inputs = Input((self.img_rows, self.img_cols,1))
-
-
 
       conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
       print("conv1 shape:", conv1.shape)
@@ -125,13 +129,11 @@ class myUnet(object):
    def train(self):
          print("loading data")
 
-        # ------- 读入 npy -------
          imgs = np.load("../npydata/imgs_train.npy").astype("float32")
          masks = np.load("../npydata/imgs_mask_train.npy").astype("float32")
          print("total samples (full):", imgs.shape[0])
 
-        # ------- 限制最多使用一部分数据，避免一次性太大 -------
-         MAX_SAMPLES = 6000  # 可以以后再调大 / 调小
+         MAX_SAMPLES = 6000 #select 6000
          N = imgs.shape[0]
          if N > MAX_SAMPLES:
             rng = np.random.default_rng(seed=42)
@@ -142,12 +144,11 @@ class myUnet(object):
          else:
             print("use all samples for GPU training")
 
-        # ------- 归一化 + 类型降为 float16（减少显存占用） -------
          imgs = imgs.astype("float16")
          masks = masks.astype("float16")
 
          imgs /= 255.0
-         mean = imgs.mean(axis=0, dtype="float32")   # 用 float32 计算均值更稳
+         mean = imgs.mean(axis=0, dtype="float32")
          imgs = imgs - mean.astype("float16")
 
          masks /= 255.0
@@ -156,7 +157,7 @@ class myUnet(object):
 
          print("after subsample:", imgs.shape[0])
 
-        # ------- 划分训练集 / 验证集（0.8 / 0.2） -------
+        # ------- ttrain/val（0.8 / 0.2） -------
          N = imgs.shape[0]
          val_ratio = 0.2
          val_size = int(N * val_ratio)
@@ -174,9 +175,8 @@ class myUnet(object):
 
          print(f"train: {X_train.shape[0]}  val: {X_val.shape[0]}")
 
-        # ------- 用 tf.data.Dataset 按 batch 喂 GPU -------
-         BATCH_SIZE   = 2   # 显存安全起见先用 1，跑通后可以尝试改成 2
-         TOTAL_EPOCHS = 30 # 本次只跑 10 个 epoch
+         BATCH_SIZE   = 2
+         TOTAL_EPOCHS = 30
 
          train_ds = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
          train_ds = train_ds.shuffle(buffer_size=len(X_train))
@@ -185,10 +185,18 @@ class myUnet(object):
          val_ds = tf.data.Dataset.from_tensor_slices((X_val, Y_val))
          val_ds = val_ds.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
-        # ------- 每次都从头建一个新模型，不继承旧的 -------
+
          print("building a fresh model...")
-         model = self.get_unet()
-         print("got unet")
+         if self.model_type == "baseline":
+            print("Using baseline U-Net")
+            model = self.get_unet()
+         elif self.model_type == "our":
+            print("Using OurResUNet")
+            model = self.get_our_resunet()
+         else:
+            raise ValueError(f"Unknown model_type: {self.model_type}")
+         print("got model:", model.name)
+
 
          model.compile(
             optimizer=Adam(learning_rate=1e-4),
@@ -199,7 +207,7 @@ class myUnet(object):
          CHECKPOINT_PATH = "../model/U-RNet+_gpu_10ep.keras"
          model_checkpoint = ModelCheckpoint(
             CHECKPOINT_PATH,
-            monitor="val_loss",   # 用验证集损失挑 best
+            monitor="val_loss",
             verbose=1,
             save_best_only=True,
          )
@@ -218,7 +226,7 @@ class myUnet(object):
          endtrain = datetime.datetime.now()
          print("train time: %s seconds" % (endtrain - starttrain))
 
-        # ------- 画 Accuracy / Loss 曲线 -------
+
          acc      = history.history["accuracy"]
          val_acc  = history.history["val_accuracy"]
          loss     = history.history["loss"]
@@ -252,5 +260,5 @@ class myUnet(object):
 
 if __name__ == '__main__':
 
-   myunet = myUnet()
+   myunet = myUnet(model_type="baseline") # pick inbetween "baseline" or "our"
    myunet.train()
