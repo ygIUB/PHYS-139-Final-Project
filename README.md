@@ -38,14 +38,13 @@ Framework: TensorFlow 2.10 + tensorflow-directml-plugin (so TF runs on GPU via D
 ## Installation
 To install and run our model, the GitHub Repository can be cloned and the essential requirements can be installed according to the environment using <br>
 1. ```git clone git@github.com:ygIUB/PHYS-139-Final-Project```
-2. ```cd PHYS-139-Final-Project
+2. ```cd PHYS-139-Final-Project```
 3. ```conda create -n modl-gpu-win```
 4. ```conda activate modl-gpu-win```
 5. ```pip install --upgrade pip```
 3. ```pip install -r requirements.txt```
 
 The dataset must be placed in the directory PHYS-139-Final-Project/cen_mitolab/*/images/. Please notice that you require Anaconda or Miniconda as a prerequisite.
-You may found your result in folder model/...
 
 ## Usage
 In your Environment, you first need to run <br>
@@ -68,5 +67,5 @@ The result of the model would be stored in folder **model/**
 ## Data
 The Project's dataset has been referenced in the GitHub repository. It is saved in the form of a .zip file in a Google Drive. The link is [here](https://drive.google.com/file/d/1ZmZ1RG796ClDXdjM_TKP6RGAd-pNKZfH/view?usp=drive_link).
 
-A good way to procure the dataset would be to directly download it and then unzip it. <br>
+A good way to procure the dataset would be to directly download it in the same directory as the cloned directory and then unzip it. <br>
 ```unzip cem-mitolab.zip```
