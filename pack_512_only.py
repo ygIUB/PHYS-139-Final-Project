@@ -1,14 +1,10 @@
-# pack_512_only.py
-# 遍历 cem_mitolab/*/images + cem_mitolab/*/masks
-# 只保留 (H,W) == (512,512) 的图像 / mask，对应成对后直接存成 npy
-
 import sys
 from pathlib import Path
 import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
-DATA_ROOT = ROOT / "cem_mitolab"   # 你的数据总目录
+DATA_ROOT = ROOT / "cem_mitolab"
 OUTDIR = ROOT / "npydata"
 OUTDIR.mkdir(exist_ok=True, parents=True)
 
@@ -16,7 +12,6 @@ EXTS = {".tif", ".tiff", ".png"}
 
 
 def read_gray(path: Path) -> np.ndarray:
-    """读图 -> 灰度 -> (H, W) uint8"""
     im = Image.open(path)
     if im.mode != "L":
         im = im.convert("L")
@@ -25,7 +20,7 @@ def read_gray(path: Path) -> np.ndarray:
 
 def collect_pairs_512(data_root: Path):
     if not data_root.exists():
-        raise SystemExit(f"[error] 数据目录不存在: {data_root}")
+        raise SystemExit(f"[error] Directory does not Exist: {data_root}")
 
     Xs, Ys = [], []
     total_pairs = 0
@@ -65,7 +60,6 @@ def collect_pairs_512(data_root: Path):
                     skipped_size += 1
                     continue
 
-                # reshape -> (H,W,1)，mask 二值化为 {0,255}
                 im = im[..., None]
                 mk = (mk > 0).astype(np.uint8)[..., None] * 255
 
@@ -78,7 +72,7 @@ def collect_pairs_512(data_root: Path):
                     print(f"[skip-err] {case_dir.name}/{ip.name}: {e}", file=sys.stderr)
 
     if not Xs:
-        raise SystemExit("[error] 没有任何 512x512 的成对样本，请检查数据。")
+        raise SystemExit("[error] No 512x512 pairs found")
 
     X = np.stack(Xs, axis=0).astype(np.uint8)
     Y = np.stack(Ys, axis=0).astype(np.uint8)

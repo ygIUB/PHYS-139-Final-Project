@@ -1,15 +1,10 @@
-# pack_tiles.py
-# 遍历 cem_mitolab/*/images + cem_mitolab/*/masks
-# 读 .tif/.tiff/.png，灰度化 -> (H,W,1)，pad/crop 到 512x512
-# 输出 npydata/imgs_train.npy & npydata/imgs_mask_train.npy
-
 import sys
 from pathlib import Path
 import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
-DATA_ROOT = ROOT / "cem_mitolab"   # 你的数据总目录
+DATA_ROOT = ROOT / "cem_mitolab"
 OUTDIR = ROOT / "npydata"
 OUTDIR.mkdir(exist_ok=True, parents=True)
 
@@ -17,7 +12,6 @@ EXTS = {".tif", ".tiff", ".png"}
 
 
 def read_gray_hw1(path: Path) -> np.ndarray:
-    """读图 -> 灰度 -> (H, W, 1) uint8"""
     im = Image.open(path)
     if im.mode != "L":
         im = im.convert("L")
@@ -25,13 +19,11 @@ def read_gray_hw1(path: Path) -> np.ndarray:
     if a.ndim == 2:
         a = a[..., None]
     elif a.ndim == 3:
-        # 如果是 (H, W, C)，取第一通道
         a = a[..., 0:1]
     return a
 
 
 def fit512(a: np.ndarray) -> np.ndarray:
-    """pad/crop 成 (512, 512, C)"""
     H, W, C = a.shape
     ph, pw = max(0, 512 - H), max(0, 512 - W)
     if ph > 0 or pw > 0:
@@ -43,7 +35,6 @@ def fit512(a: np.ndarray) -> np.ndarray:
 
 
 def collect_pairs(data_root: Path):
-    """遍历 cem_mitolab 下所有子目录，收集 (image, mask) 成对样本"""
     if not data_root.exists():
         raise SystemExit(f"[error] 数据目录不存在: {data_root}")
 
