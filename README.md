@@ -44,7 +44,7 @@ To install and run our model, the GitHub Repository can be cloned and the essent
 5. ```pip install --upgrade pip```
 3. ```pip install -r requirements.txt```
 
-The dataset must be placed in the directory PHYS-139-Final-Project/cen_mitolab/*/images/. Please notice that you require Anaconda or Miniconda as a prerequisite.
+The dataset must be placed in the directory PHYS-139-Final-Project/. Please notice that you require Anaconda or Miniconda as a prerequisite.
 
 ## Usage
 In your Environment, you first need to run <br>
