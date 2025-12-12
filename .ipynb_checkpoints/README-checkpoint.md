@@ -1,23 +1,28 @@
 # PHYS-139 Final Project: Mitochondrial Segmentation on EM Cell Images
 
 ## Introduction
-This project is an effort at extending our chosen paper on MoDL to segment mitochondria from background in Electron Microscopy Images instead of Fluorescent images. Mitochondrial segmentation allows one to further study the morphology and efficiency of the mitochondria as well. This task has been carried out by using Image Preprocessing, a 2D Convolutional Neural Network and a modified U-Net model. It has been trained and validated on a dataset from CEM-MitoLab.
+This project is an effort at extending our chosen paper on MoDL to segment mitochondria from background in Electron Microscopy Images instead of Fluorescent images. Mitochondrial segmentation allows one to further study the morphology and efficiency of the mitochondria as well. This task has been carried out by using Image Preprocessing, a 2D Convolutional Neural Network and a modified U-Net model. It has been trained and validated on a dataset from [CEM-MitoLab](https://empiar.pdbj.org/en/entry/11037/).
 
 ```text
 PHYS-139-Final-Project/
 ├── .ipynb_checkpoints/
-├── MitoSegNet/     <-- MitoSegNet model files
-├── MoDL_pre/       <-- MoDL model from original paper 
-├── MoDL_seg/       <-- MoDL files modified for benchmark testing
-├── benchmarking/   <-- Benchmarking scripts
-├── helpers/        <-- Helper functions for our model
+├── MitoSegNet/              <-- MitoSegNet model files
+├── MoDL_pre/                <-- MoDL model from original paper 
+├── MoDL_seg/                <-- MoDL files modified for benchmark testing
+├── benchmarking/            <-- Benchmarking scripts
 ├── .gitignore
 ├── LICENSE
 ├── README.md
-├── ourResUnet.py   <-- Our Model's main file
+├── main_code.ipynb
+├── ourResUnet.py            <-- Our Model's main file
+├── pack_512_only.py         <-- Our script to select only 512x512 images
+├── pack_tiles.py            <-- Script to tile image, mask pairs
 ├── requirements.docker.txt  <-- Requirements.txt for Docker
 ├── requirements.txt         <-- Requirements.txt
-└── requirements.win.txt     <-- Requirements.txt for Windows
+├── requirements.win.txt     <-- Requirements.txt for Windows
+├── scan_pairs.py            <-- Scans for the tiled pairs
+├── split_npy_80_10_10.py    <-- Splits the data into 80% training, 10% validation and 10% testing data
+├── tile_pairs.py
 ```
 
 ## Table of Contents
@@ -48,6 +53,7 @@ The dataset must be placed in the directory PHYS-139-Final-Project/. Please noti
 
 ## Usage
 In your Environment, you first need to run <br>
+
 ```python pack_512_only.py``` <br>
 
 This picks and pairs all the 512x512 images from the dataset. 
@@ -59,13 +65,15 @@ if __name__ == '__main__':
     myunet.train
 ```
 
-Then, you can directly train with train.py as<br>
+Then, you can directly train with train.py as:<br>
+
 ```python train.py```<br>
 
-The result of the model would be stored in folder **model/**
+The result of the model would be stored in **model/** folder.
 
 ## Data
 The Project's dataset has been referenced in the GitHub repository. It is saved in the form of a .zip file in a Google Drive. The link is [here](https://drive.google.com/file/d/1ZmZ1RG796ClDXdjM_TKP6RGAd-pNKZfH/view?usp=drive_link).
 
 A good way to procure the dataset would be to directly download it in the same directory as the cloned directory and then unzip it. <br>
+
 ```unzip cem-mitolab.zip```
