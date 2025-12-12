@@ -1,4 +1,5 @@
 import io
+import os
 import numpy as np
 import cv2
 from scipy.ndimage import morphology
@@ -8,66 +9,23 @@ from skimage.measure import regionprops
 from scipy.stats import kurtosis
 from scipy.stats import skew
 from skimage.morphology import convex_hull_image
-from PIL import Image
-import os
-import glob
 import pandas as pd
-import joblib
-import argparse
 
 
-def clear_files(folder):
-    for root, dirs, files in os.walk(folder):
-        for file in files:
-            file_path = os.path.join(root, file)
-            os.remove(file_path)
-
-
-def crop_image(input_filepath, output_folder):
-    original_image = Image.open(input_filepath)
-    width, height = original_image.size
-    crop_size = 512
-
-    base_filename = os.path.splitext(os.path.basename(input_filepath))[0]
-
-    for i in range(4):
-        for j in range(4):
-            left = j * crop_size
-            top = i * crop_size
-            right = left + crop_size
-            bottom = top + crop_size
-
-            cropped_image = original_image.crop((left, top, right, bottom))
-            output_filename = f"{base_filename}_{i * 4 + j + 1}.png"
-            output_filepath = os.path.join(output_folder, output_filename)
-
-            cropped_image.save(output_filepath)
-
-def process_images_crop(input_folder, output_folder):
-    image_formats = ['*.png', '*.jpg', '*.jpeg', '*.tif', '*.tiff']
-    os.makedirs(output_folder, exist_ok=True)  #Ensuring the output folder exists
-
-    for image_format in image_formats:
-        image_files = glob.glob(os.path.join(input_folder, image_format))
-
-        for input_filepath in image_files:
-            crop_image(input_filepath, output_folder)
-
-
-#
 def load_and_skeletonize_image(file_path):
     image = io.imread(file_path)
     binary_image = image > 0
     skeleton = morphology.skeletonize(binary_image)
     return skeleton
 
+
 def eight_neighbors(x, y, image):
-        VIII_neighbors = [image[x, y - 1], image[x - 1, y - 1], image[x - 1, y], image[x - 1, y + 1],
-                          image[x, y + 1], image[x + 1, y + 1], image[x + 1, y], image[x + 1, y - 1]]
-        return VIII_neighbors
+    VIII_neighbors = [image[x, y - 1], image[x - 1, y - 1], image[x - 1, y], image[x - 1, y + 1],
+                      image[x, y + 1], image[x + 1, y + 1], image[x + 1, y], image[x + 1, y - 1]]
+    return VIII_neighbors
+
 
 def getSkeletonIntersection(skeleton):
-
     validIntersection = [[0, 1, 0, 1, 0, 0, 1, 0], [0, 0, 1, 0, 1, 0, 0, 1], [1, 0, 0, 1, 0, 1, 0, 0],
                          [0, 1, 0, 0, 1, 0, 1, 0], [0, 0, 1, 0, 0, 1, 0, 1], [1, 0, 0, 1, 0, 0, 1, 0],
                          [0, 1, 0, 0, 1, 0, 0, 1], [1, 0, 1, 0, 0, 1, 0, 0], [0, 1, 0, 0, 0, 1, 0, 1],
@@ -100,13 +58,16 @@ def getSkeletonIntersection(skeleton):
     intersections = list(set(intersections));
     return intersections;
 
-def measurement(directory_path):
+
+def measurement(directory_path, save_path):
     database = pd.DataFrame([[0] * 103],
-                            columns=['cell_name', 'cell_mean_mito_area_(pixels_squared)', 'cell_median_mito_area_(pixels_squared)',
+                            columns=['cell_name', 'cell_mean_mito_area_(pixels_squared)',
+                                     'cell_median_mito_area_(pixels_squared)',
                                      'cell_std_mito_area_(pixels_squared)', 'cell_mean_mito_eccentricity',
                                      'cell_median_mito_eccentricity', 'cell_std_mito_eccentricity',
                                      'cell_mean_mito_equi_diameter_(pixels)', 'cell_median_mito_equi_diameter_(pixels)',
-                                     'cell_std_mito_equi_diameter_(pixels)', 'cell_mean_mito_euler_number','cell_std_mito_euler_number',
+                                     'cell_std_mito_equi_diameter_(pixels)', 'cell_mean_mito_euler_number',
+                                     'cell_std_mito_euler_number',
                                      'cell_mean_mito_extent',
                                      'cell_median_mito_extent', 'cell_std_mito_extent',
                                      'cell_mean_mito_major_axis_(pixels)',
@@ -195,7 +156,7 @@ def measurement(directory_path):
                                                      'mito_weighted_distance', 'mito_form_factor', 'mito_roundness'])
 
     test_num = 0
-    files = os.listdir(directory_path)
+    files = os.listdir(directory_path)  # 获取目录中的文件列表
     total_file_count = len(files)
     image_extensions = ['.jpg', '.png', '.tif', '.tiff']
 
@@ -205,11 +166,11 @@ def measurement(directory_path):
             try:
                 file_path = os.path.join(directory_path, file)
                 img = cv2.imread(file_path)
-                img = img[:,:,0]
-                print("Test", file, f'Test [{np.round(100*(test_num/total_file_count),2)}%]')
-                scale =1
+                img = img[:, :, 0]
+                print("Test", file, f'Test [{np.round(100 * (test_num / total_file_count), 2)}%]')
+                scale = 1
 
-                
+                # 独立线粒体测试
                 mito_labels = measure.label(np.array(img), connectivity=2)
                 mito_props = regionprops(mito_labels)
 
@@ -374,7 +335,7 @@ def measurement(directory_path):
                 mito_average_density = np.multiply(scale, mito_average_density)
                 mito_median_density = np.multiply(scale, mito_median_density)
 
-
+                # 单张图片为单位
                 cell_mito_count = len(mito_area)
                 cell_total_mito_area = np.sum(mito_area)
                 cell_mean_mito_area = np.mean(mito_area)
@@ -520,7 +481,8 @@ def measurement(directory_path):
                                               cell_median_mito_area, cell_std_mito_area, cell_mean_mito_eccentricity,
                                               cell_median_mito_eccentricity, cell_std_mito_eccentricity,
                                               cell_mean_mito_equi_diameter, cell_median_mito_equi_diameter,
-                                              cell_std_mito_equi_diameter, cell_mean_mito_euler_number, cell_std_mito_euler_number,
+                                              cell_std_mito_equi_diameter, cell_mean_mito_euler_number,
+                                              cell_std_mito_euler_number,
                                               cell_mean_mito_extent, cell_median_mito_extent, cell_std_mito_extent,
                                               cell_mean_mito_major_axis, cell_median_mito_major_axis,
                                               cell_std_mito_major_axis,
@@ -580,7 +542,7 @@ def measurement(directory_path):
                                                      'cell_median_mito_equi_diameter_(pixels)',
                                                      'cell_std_mito_equi_diameter_(pixels)',
                                                      'cell_mean_mito_euler_number',
-                                                      'cell_std_mito_euler_number',
+                                                     'cell_std_mito_euler_number',
                                                      'cell_mean_mito_extent',
                                                      'cell_median_mito_extent', 'cell_std_mito_extent',
                                                      'cell_mean_mito_major_axis_(pixels)',
@@ -702,137 +664,21 @@ def measurement(directory_path):
 
                 database = database.append(temp_dataset, ignore_index=True)
                 database_raw = database_raw.append(temp_dataset_raw, ignore_index=True)
+
             except:
-                print('Can\'t test {0}'.format(file))
+                print('Cann\'t test {0}'.format(file))
     database.drop(database.index[0], inplace=True)
-    database.to_csv(directory_path + '/' + "Distinct image test" + '.csv', sep=',', index=False)
+    database.to_csv(save_path + "/" + "Distinct image test" + "v.csv", sep=',', index=False)
+    database.to_csv("../final_results/512x512_pixels" + "/" + "Distinct image test" + "v.csv", sep=',', index=False)
 
     database_raw.drop(database_raw.index[0], inplace=True)
-    database_raw.to_csv(directory_path + '/' + "Distinct mitochondria test" + '.tsv', sep='\t', index=False)
-
+    database_raw.to_csv(save_path + "/" + "Distinct mitochondria test" + ".tsv", sep='\t', index=False)
+    database_raw.to_csv("../final_results/512x512_pixels" + "/" + "Distinct mitochondria test" + ".tsv", sep='\t',
+                        index=False)
 
     print('Test has been completed')
 
 
-
-def extract_feature_name(filename):
-    parts = filename.rsplit('_', 1)
-    return parts[0]
-
-
-def prediction(new_samples_path, model_folder_path):
-    new_samples_name = pd.read_csv(new_samples_path)
-    identifiers = new_samples_name.iloc[:, 0].apply(extract_feature_name)
-
-    new_samples = new_samples_name.drop(new_samples_name.columns[0], axis=1)
-
-
-    # Loading MMP Model
-    xgb1_MMP = joblib.load(f'{model_folder_path}/xgb1_MMP.pkl')
-    lgb1_MMP = joblib.load(f'{model_folder_path}/lgb1_MMP.pkl')
-    xgb2_MMP = joblib.load(f'{model_folder_path}/xgb2_MMP.pkl')
-
-    new_xgb1_preds_MMP = xgb1_MMP.predict(new_samples)
-    new_samples_2_MMP = pd.concat([new_samples, pd.DataFrame(new_xgb1_preds_MMP, columns=['xgb1_preds_MMP'])], axis=1)
-
-    new_lgb1_preds_MMP = lgb1_MMP.predict(new_samples_2_MMP)
-    new_samples_3_MMP = pd.concat([new_samples_2_MMP, pd.DataFrame(new_lgb1_preds_MMP, columns=['lgb1_preds_MMP'])],
-                                  axis=1)
-
-    new_xgb2_preds_MMP = xgb2_MMP.predict(new_samples_3_MMP)
-
-    # ATP
-    xgb1_ATP = joblib.load(f'{model_folder_path}/xgb1_ATP.pkl')
-    lgb1_ATP = joblib.load(f'{model_folder_path}/lgb1_ATP.pkl')
-    xgb2_ATP = joblib.load(f'{model_folder_path}/xgb2_ATP.pkl')
-
-    new_xgb1_preds_ATP = xgb1_ATP.predict(new_samples)
-    new_samples_2_ATP = pd.concat([new_samples, pd.DataFrame(new_xgb1_preds_ATP, columns=['xgb1_preds_ATP'])], axis=1)
-
-    new_lgb1_preds_ATP = lgb1_ATP.predict(new_samples_2_ATP)
-    new_samples_3_ATP = pd.concat([new_samples_2_ATP, pd.DataFrame(new_lgb1_preds_ATP, columns=['lgb1_preds_ATP'])],
-                                  axis=1)
-
-    new_xgb2_preds_ATP = xgb2_ATP.predict(new_samples_3_ATP)
-
-    # mitophagy
-    xgb1_mitophagy = joblib.load(f'{model_folder_path}/xgb1_mitophagy.pkl')
-    lgb1_mitophagy = joblib.load(f'{model_folder_path}/lgb1_mitophagy.pkl')
-    xgb2_mitophagy = joblib.load(f'{model_folder_path}/xgb2_mitophagy.pkl')
-
-    new_xgb1_preds_mitophagy = xgb1_mitophagy.predict(new_samples)
-    new_samples_2_mitophagy = pd.concat(
-        [new_samples, pd.DataFrame(new_xgb1_preds_mitophagy, columns=['xgb1_preds_mitophagy'])], axis=1)
-
-    new_lgb1_preds_mitophagy = lgb1_mitophagy.predict(new_samples_2_mitophagy)
-    new_samples_3_mitophagy = pd.concat(
-        [new_samples_2_mitophagy, pd.DataFrame(new_lgb1_preds_mitophagy, columns=['lgb1_preds_mitophagy'])], axis=1)
-
-    new_xgb2_preds_mitophagy = xgb2_mitophagy.predict(new_samples_3_mitophagy)
-
-    # respiration
-    xgb1_respiration = joblib.load(f'{model_folder_path}/xgb1_respiration.pkl')
-    lgb1_respiration = joblib.load(f'{model_folder_path}/lgb1_respiration.pkl')
-    xgb2_respiration = joblib.load(f'{model_folder_path}/xgb2_respiration.pkl')
-
-    new_xgb1_preds_respiration = xgb1_respiration.predict(new_samples)
-    new_samples_2_respiration = pd.concat(
-        [new_samples, pd.DataFrame(new_xgb1_preds_respiration, columns=['xgb1_preds_respiration'])], axis=1)
-
-    new_lgb1_preds_respiration = lgb1_respiration.predict(new_samples_2_respiration)
-    new_samples_3_respiration = pd.concat(
-        [new_samples_2_respiration, pd.DataFrame(new_lgb1_preds_respiration, columns=['lgb1_preds_respiration'])],
-        axis=1)
-
-    new_xgb2_preds_respiration = xgb2_respiration.predict(new_samples_3_respiration)
-
-    # ROS
-    xgb1_ROS = joblib.load(f'{model_folder_path}/xgb1_ROS.pkl')
-    lgb1_ROS = joblib.load(f'{model_folder_path}/lgb1_ROS.pkl')
-    xgb2_ROS = joblib.load(f'{model_folder_path}/xgb2_ROS.pkl')
-
-    new_xgb1_preds_ROS = xgb1_ROS.predict(new_samples)
-    new_samples_2_ROS = pd.concat([new_samples, pd.DataFrame(new_xgb1_preds_ROS, columns=['xgb1_preds_ROS'])], axis=1)
-
-    new_lgb1_preds_ROS = lgb1_ROS.predict(new_samples_2_ROS)
-    new_samples_3_ROS = pd.concat([new_samples_2_ROS, pd.DataFrame(new_lgb1_preds_ROS, columns=['lgb1_preds_ROS'])],
-                                  axis=1)
-
-    new_xgb2_preds_ROS = xgb2_ROS.predict(new_samples_3_ROS)
-
-    final_new_preds_MMP = 0.44 * new_lgb1_preds_MMP + 0.56 * new_xgb2_preds_MMP
-    final_new_preds_ATP = 0.44 * new_lgb1_preds_ATP + 0.56 * new_xgb2_preds_ATP
-    final_new_preds_ROS = 0.44 * new_lgb1_preds_ROS + 0.56 * new_xgb2_preds_ROS
-    final_new_preds_respiration = 0.44 * new_lgb1_preds_respiration + 0.56 * new_xgb2_preds_respiration
-    final_new_preds_mitophagy = 0.44 * new_lgb1_preds_mitophagy + 0.56 * new_xgb2_preds_mitophagy
-
-    print("Prediction results-")
-    # print(final_new_preds_MMP, final_new_preds_ATP, final_new_preds_ROS, final_new_preds_respiration,
-    #       final_new_preds_mitophagy)
-
-    results_with_id = pd.concat([identifiers, pd.DataFrame({'image_name': identifiers,'Predictions_MMP': final_new_preds_MMP, 'Predictions_ATP': final_new_preds_ATP,
-                                   'Predictions_ROS': final_new_preds_ROS,
-                                   'Predictions_respiration': final_new_preds_respiration,
-                                   'Predictions_mitophagy': final_new_preds_mitophagy})])
-    # results_with_id['feature_name'] = results_with_id.iloc[:, 0].apply(extract_feature_name)
-    averaged_results = results_with_id.groupby('image_name').mean().reset_index()
-
-    averaged_results.to_csv("../final_results/function_predictions.csv", index=False)
-    averaged_results.to_csv("../results" + "/function_predictions.csv", index=False)
-
-    print("The results have been save to 'final_predictions.csv'")
-
-
-if __name__ == "__main__":
-    clear_files("../final_results/512x512_pixels/")
-    input_folder = "../final_results/bw"
-    output_folder = "../final_results/512x512_pixels"
-#
-    process_images_crop(input_folder, output_folder)
-#
-    file_path = output_folder
-    measurement(file_path)
-#
-    model_folder_path = f"../model/Hela"
-    new_samples_path = output_folder +'/Distinct image test.csv'  #Please replace with path to the new sample data file
-    prediction(new_samples_path, model_folder_path)
+upload_path = "../final_results/bw"
+save_floder = "../results"
+measurement(upload_path, save_floder)

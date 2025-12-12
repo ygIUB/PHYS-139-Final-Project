@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 tile_pairs.py
-Cut paired (image, mask) files into MoDL-style 512×512 tiles.
-
 Input:
   - a pairs list file, each line: <image_path>\t<mask_path>
-    (we already generated /workspace/qa/pairs.txt via scan_pairs.py)
+    
 Output:
   - tiled image pngs to out_img_dir
   - tiled mask  pngs to out_msk_dir
@@ -43,7 +41,7 @@ except Exception:
 
 
 def to_uint8_percentile(im: np.ndarray, p1: float = 1.0, p99: float = 99.0) -> np.ndarray:
-    """Normalize image by (p1, p99) percentiles -> uint8."""
+    #Normalize image by (p1, p99) percentiles -> uint8
     imf = im.astype(np.float32)
     lo, hi = np.percentile(imf, [p1, p99])
     if hi > lo:
@@ -59,7 +57,7 @@ def to_uint8_percentile(im: np.ndarray, p1: float = 1.0, p99: float = 99.0) -> n
 
 
 def reflect_pad_to_grid(im: np.ndarray, tile: int) -> np.ndarray:
-    """Pad with reflect to the next multiple of tile."""
+    #Pad with reflect to the next multiple of tile
     H, W = im.shape[:2]
     Hn = int(ceil(H / tile) * tile)
     Wn = int(ceil(W / tile) * tile)
@@ -85,7 +83,7 @@ def iter_tiles(im: np.ndarray, mk: np.ndarray, tile: int, stride: int, keep_bg: 
 
 
 def load_pair(ip: Path, mp: Path) -> Tuple[np.ndarray, np.ndarray] | None:
-    """Read image & mask; squeeze singleton channel; validate shape."""
+    #Read image & mask; squeeze singleton channel; validate shape
     try:
         im = io.imread(str(ip))
         mk = io.imread(str(mp))
@@ -128,7 +126,7 @@ def main():
     out_msk.mkdir(parents=True, exist_ok=True)
 
     if not pairs_file.exists():
-        raise FileNotFoundError(f"pairs file not found: {pairs_file}")
+        raise FileNotFoundError(f"Pairs file not found: {pairs_file}")
 
     # read lines
     lines = [ln.strip() for ln in pairs_file.read_text(encoding="utf-8").splitlines() if ln.strip()]

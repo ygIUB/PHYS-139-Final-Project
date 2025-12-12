@@ -185,9 +185,9 @@ def main():
 
     save_overlays(pairs, QA_DIR, n=16)
     if pairs:
-        print(f"[scan] Wrote {len(pairs)} pairs to {QA_DIR/'pairs.txt'} and overlays to {QA_DIR}")
+        print(f"Update: Wrote {len(pairs)} pairs to {QA_DIR/'pairs.txt'} and overlays to {QA_DIR}")
     else:
-        print("[scan] No valid pairs found. Check details JSON and directory naming (images/ vs masks/).")
+        print("Update: No valid pairs found. Check JSON details and directory naming (images/ vs masks/)")
 
 
 if __name__ == "__main__":

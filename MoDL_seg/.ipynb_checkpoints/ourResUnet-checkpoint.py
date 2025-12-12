@@ -1,18 +1,88 @@
 """
-ourResUnet.py
+OurResUNet – how this structure relates to the original ResUNet
 
-This file contains a first skeleton of our custom ResUNet-style architecture ("OurResUNet").
+High-level idea
+---------------
+We want a model that is clearly U-Net/ResUNet-style, but written in our own
+words so that (1) we understand every piece, and (2) we have room to add our
+own ideas (normalization, multi-scale, etc.).
 
-Design goals:
-- A U-Net–like encoder–decoder structure with skip connections.
-- Using simple residual blocks (ResNet idea) inside each stage.
-- Later we can extend this with:
-  * LayerNorm instead of BatchNorm for small batch sizes.
-  * Multi-scale context at the bottleneck (dilated convolutions).
-  * Optional boundary head or attention modules.
+Mapping to the original ResUNet blocks
+--------------------------------------
+In the reference ResUNet implementation there are three main types of blocks:
 
-Right now this is intentionally minimal and easy to modify.
+- conv_block
+    * encoder/downsampling residual block
+    * does: residual convs + downsampling (pooling) inside the block
+
+- conv_block1
+    * decoder/upsampling residual block
+    * does: upsampling + skip concatenation + residual convs
+
+- identity_block
+    * residual block that keeps the same spatial resolution
+    * does: F(x) + x at fixed HxW
+
+In this file we keep the **same roles**, but we make them more explicit:
+
+1) residual_block(...)
+   --------------------
+   This is our generic residual unit. It corresponds to the "inner part" of
+   conv_block / conv_block1 / identity_block:
+
+       y = Conv -> Norm -> ReLU -> Conv -> Norm
+       out = ReLU(y + shortcut)
+
+   We use LayerNormalization here (instead of BatchNorm) because our training
+   batch size on GPU is very small (1–2), and BatchNorm becomes unstable in
+   that regime. The shortcut uses a 1x1 conv if the number of channels changes.
+
+2) Encoder stages (e1–e4 + p1–p4)
+   -------------------------------
+   Each encoder level is:
+
+       eX = residual_block(...)
+       pX = MaxPooling2D(eX)
+
+   This plays the same role as a conv_block in the original ResUNet:
+   "do residual convs at the current resolution, then downsample".
+   We just split it into two clear steps instead of hiding pooling inside the block.
+
+3) Bottleneck (bottleneck residual_block)
+   --------------------------------------
+   At the lowest resolution (32x32 in our current setting) we apply one
+   residual_block. This is equivalent to an identity_block at the bottleneck
+   in ResUNet.
+
+   The current version is deliberately minimal. The plan is to replace or
+   extend this with a multi-scale context module (e.g. several dilated
+   convolutions with different rates) so that the network can better capture
+   elongated mitochondria and multi-scale EM structures.
+
+4) Decoder stages (u1–u4 / d1–d4)
+   -------------------------------
+   Each decoder level is:
+
+       uX = UpSampling2D(...)
+       uX = Concatenate([uX, encoder_feature])
+       dX = residual_block(uX, ...)
+
+   This corresponds to conv_block1 in the original ResUNet:
+   "upsample, concatenate the skip connection, then apply a residual block".
+
+Summary
+-------
+- We **keep the overall U-Net / ResUNet structure**:
+  encoder–decoder with skips and residual connections.
+- We **rewrite the blocks in a simpler, more explicit way** so that we can:
+  * reason about each step (downsample, upsample, skip, residual),
+  * swap BatchNorm -> LayerNorm for small-batch training,
+  * later plug in multi-scale / attention / boundary heads.
+
+This is why the architecture is structurally similar to ResUNet, but the code
+is our own implementation, and it is designed to be extended in the next steps.
 """
+
 
 from tensorflow.keras.layers import (
     Input, Conv2D, Activation, MaxPooling2D,
@@ -30,7 +100,7 @@ def residual_block(x, filters, name=None):
 
     Later we can:
     - Swap LayerNormalization for GroupNorm / BatchNorm if needed.
-    - We can insert a lightweight attention module (e.g. SE / CBAM) inside this block.
+    - Insert a lightweight attention module (e.g. SE / CBAM) inside this block.
     """
     shortcut = x
 

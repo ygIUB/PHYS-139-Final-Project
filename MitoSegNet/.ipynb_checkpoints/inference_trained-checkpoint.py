@@ -313,7 +313,7 @@ def main():
         print("Please provide test images to run inference.")
 
     print("\n" + "=" * 60)
-    print("Inference Complete")
+    print("INFERENCE COMPLETE")
     print("=" * 60)
 
 

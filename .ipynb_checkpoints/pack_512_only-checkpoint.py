@@ -11,35 +11,22 @@ OUTDIR.mkdir(exist_ok=True, parents=True)
 EXTS = {".tif", ".tiff", ".png"}
 
 
-def read_gray_hw1(path: Path) -> np.ndarray:
+def read_gray(path: Path) -> np.ndarray:
     im = Image.open(path)
     if im.mode != "L":
         im = im.convert("L")
-    a = np.array(im, dtype=np.uint8)
-    if a.ndim == 2:
-        a = a[..., None]
-    elif a.ndim == 3:
-        a = a[..., 0:1]
-    return a
+    return np.array(im, dtype=np.uint8)
 
 
-def fit512(a: np.ndarray) -> np.ndarray:
-    H, W, C = a.shape
-    ph, pw = max(0, 512 - H), max(0, 512 - W)
-    if ph > 0 or pw > 0:
-        a = np.pad(a, ((0, ph), (0, pw), (0, 0)), mode="reflect")
-        H, W, C = a.shape
-    y0 = (H - 512) // 2
-    x0 = (W - 512) // 2
-    return a[y0:y0 + 512, x0:x0 + 512, :]
-
-
-def collect_pairs(data_root: Path):
+def collect_pairs_512(data_root: Path):
     if not data_root.exists():
-        raise SystemExit(f"Error: Data Directory {data_root} does not exist")
+        raise SystemExit(f"[error] Directory does not Exist: {data_root}")
 
     Xs, Ys = [], []
-    total, bad = 0, 0
+    total_pairs = 0
+    used_512 = 0
+    skipped_size = 0
+    skipped_err = 0
 
     for case_dir in sorted(data_root.iterdir()):
         if not case_dir.is_dir():
@@ -49,7 +36,6 @@ def collect_pairs(data_root: Path):
         msk_dir = case_dir / "masks"
         if not (img_dir.exists() and msk_dir.exists()):
             continue
-
 
         mindex = {
             p.stem: p for p in msk_dir.iterdir()
@@ -62,38 +48,49 @@ def collect_pairs(data_root: Path):
         ]
         img_paths = sorted(img_paths, key=lambda p: (case_dir.name, p.stem))
 
-        print(f"[case] {case_dir.name}: {len(img_paths)} pairs")
-
+        print(f"[case] {case_dir.name}: {len(img_paths)} raw pairs")
         for ip in img_paths:
             mp = mindex[ip.stem]
-            total += 1
+            total_pairs += 1
             try:
-                im = fit512(read_gray_hw1(ip))
-                mk = fit512(read_gray_hw1(mp))
-                mk = (mk > 0).astype(np.uint8) * 255
+                im = read_gray(ip)
+                mk = read_gray(mp)
+
+                if im.shape != (512, 512) or mk.shape != (512, 512):
+                    skipped_size += 1
+                    continue
+
+                im = im[..., None]
+                mk = (mk > 0).astype(np.uint8)[..., None] * 255
+
                 Xs.append(im)
                 Ys.append(mk)
+                used_512 += 1
             except Exception as e:
-                bad += 1
-                if bad <= 10:
-                    print(f"[skip] {case_dir.name}/{ip.name}: {e}", file=sys.stderr)
+                skipped_err += 1
+                if skipped_err <= 10:
+                    print(f"[skip-err] {case_dir.name}/{ip.name}: {e}", file=sys.stderr)
 
     if not Xs:
-        raise SystemExit("Error: No (image, mask) pairs were found，please check the directory structure and file names.")
+        raise SystemExit("[error] No 512x512 pairs found")
 
     X = np.stack(Xs, axis=0).astype(np.uint8)
     Y = np.stack(Ys, axis=0).astype(np.uint8)
-    print(f"[pack] total pairs: {total}, used: {len(Xs)}, skipped: {bad}")
+
+    print(f"[summary] total raw pairs   : {total_pairs}")
+    print(f"[summary] used 512x512 pairs: {used_512}")
+    print(f"[summary] skipped by size   : {skipped_size}")
+    print(f"[summary] skipped by error  : {skipped_err}")
+
     return X, Y
 
 
 def main():
-    X, Y = collect_pairs(DATA_ROOT)
+    X, Y = collect_pairs_512(DATA_ROOT)
     np.save(OUTDIR / "imgs_train.npy", X)
     np.save(OUTDIR / "imgs_mask_train.npy", Y)
-    print("[pack] saved:")
-    print("       ", OUTDIR / "imgs_train.npy", X.shape, X.dtype)
-    print("       ", OUTDIR / "imgs_mask_train.npy", Y.shape, Y.dtype)
+    print("[save] ", OUTDIR / "imgs_train.npy", X.shape, X.dtype)
+    print("[save] ", OUTDIR / "imgs_mask_train.npy", Y.shape, Y.dtype)
 
 
 if __name__ == "__main__":

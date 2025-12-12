@@ -157,7 +157,7 @@ class myUnet(object):
 
          print("after subsample:", imgs.shape[0])
 
-        # ------- ttrain/val（0.8 / 0.2） -------
+        #train/validation split（0.8 / 0.2)
          N = imgs.shape[0]
          val_ratio = 0.2
          val_size = int(N * val_ratio)
@@ -186,7 +186,7 @@ class myUnet(object):
          val_ds = val_ds.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
 
-         print("building a fresh model...")
+         print("Building a fresh model...")
          if self.model_type == "baseline":
             print("Using baseline U-Net")
             model = self.get_unet()
@@ -260,5 +260,5 @@ class myUnet(object):
 
 if __name__ == '__main__':
 
-   myunet = myUnet(model_type="baseline") # pick inbetween "baseline" or "our"
+   myunet = myUnet(model_type="baseline") # please choose between "baseline" or "our"
    myunet.train()

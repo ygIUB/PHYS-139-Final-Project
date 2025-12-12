@@ -1,5 +1,5 @@
 """
-Inference script for Pretrained MitoSegNet model
+Inference script for PRETRAINED MitoSegNet model
 (trained on fluorescent microscopy data)
 
 This demonstrates domain mismatch - the model was trained on fluorescent
@@ -223,7 +223,7 @@ def main():
     print("PRETRAINED MITOSEGNET INFERENCE (FLUORESCENT MODEL)")
     print("=" * 60)
     print("\nWARNING: This model was trained on fluorescent microscopy,")
-    print("not electron microscopy. Performance will likely be poor.")
+    print("NOT electron microscopy. Performance will likely be poor.")
     print("This demonstrates the need for domain adaptation.\n")
 
     # Configuration
@@ -261,7 +261,7 @@ def main():
         print("Please provide test images to run inference.")
 
     print("\n" + "=" * 60)
-    print("Inference Complete")
+    print("INFERENCE COMPLETE")
     print("=" * 60)
 
 

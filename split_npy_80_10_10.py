@@ -12,9 +12,9 @@ print("[load]", Y_path)
 X = np.load(X_path)
 Y = np.load(Y_path)
 
-assert X.shape[0] == Y.shape[0], "X 和 Y 的样本数量不一致！"
+assert X.shape[0] == Y.shape[0], "The samples sizes of X and Y are inconsistent!"
 N = X.shape[0]
-print(f"[info] 总样本数 N = {N}")
+print(f"Total Sample size N = {N}")
 
 rng = np.random.default_rng(seed=42)
 idx = rng.permutation(N)
