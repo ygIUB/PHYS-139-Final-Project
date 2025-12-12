@@ -157,10 +157,33 @@ def build_our_resunet(input_shape=(512, 512, 1)):
     e4 = residual_block(p3, 512, name="enc4")
     p4 = MaxPooling2D(pool_size=(2, 2), name="pool4")(e4)   # 32x32
 
-    # ---- Bottleneck (placeholder) ----
-    # For now we just use one residual block.
-    # Later we can replace this with a multi-scale dilated context module.
-    b = residual_block(p4, 512, name="bottleneck")          # 32x32
+     # ---- Bottleneck with simple multi-scale context ----
+    # Instead of a single residual block, we apply three dilated conv branches
+    # to capture multi-scale context at the lowest resolution.
+    b0 = residual_block(p4, 512, name="bottleneck_base")  # base residual feature
+
+    # dilation branches: rates 1, 2, 4
+    b1 = Conv2D(512, (3, 3), padding="same", dilation_rate=1,
+                name="bottleneck_dil1_conv")(b0)
+    b1 = LayerNormalization(name="bottleneck_dil1_ln")(b1)
+    b1 = Activation("relu", name="bottleneck_dil1_relu")(b1)
+
+    b2 = Conv2D(512, (3, 3), padding="same", dilation_rate=2,
+                name="bottleneck_dil2_conv")(b0)
+    b2 = LayerNormalization(name="bottleneck_dil2_ln")(b2)
+    b2 = Activation("relu", name="bottleneck_dil2_relu")(b2)
+
+    b3 = Conv2D(512, (3, 3), padding="same", dilation_rate=4,
+                name="bottleneck_dil3_conv")(b0)
+    b3 = LayerNormalization(name="bottleneck_dil3_ln")(b3)
+    b3 = Activation("relu", name="bottleneck_dil3_relu")(b3)
+
+    # concatenate and fuse back to 512 channels
+    b_cat = Concatenate(axis=-1, name="bottleneck_concat")([b1, b2, b3])  # 512*3 channels
+    b = Conv2D(512, (1, 1), padding="same", name="bottleneck_fuse_conv")(b_cat)
+    b = LayerNormalization(name="bottleneck_fuse_ln")(b)
+    b = Activation("relu", name="bottleneck_fuse_relu")(b)   # final bottleneck feature (32x32, 512)
+
 
     # ---- Decoder ----
     # Up 1: 32x32 -> 64x64
@@ -188,3 +211,4 @@ def build_our_resunet(input_shape=(512, 512, 1)):
 
     model = Model(inputs=inputs, outputs=outputs, name="OurResUNet")
     return model
+
