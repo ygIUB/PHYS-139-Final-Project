@@ -32,4 +32,5 @@ __pycache__/
 # --- IDE / editor ---
 .vscode/
 .idea/
+.ipynb_checkpoints/
 *.swp
