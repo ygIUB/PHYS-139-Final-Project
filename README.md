@@ -5,7 +5,6 @@ This project is an effort at extending our chosen paper on MoDL to segment mitoc
 
 ```text
 PHYS-139-Final-Project/
-├── .ipynb_checkpoints/
 ├── MitoSegNet/              <-- MitoSegNet model files
 ├── MoDL_pre/                <-- MoDL model from original paper 
 ├── MoDL_seg/                <-- MoDL files modified for benchmark testing
@@ -13,7 +12,6 @@ PHYS-139-Final-Project/
 ├── .gitignore
 ├── LICENSE
 ├── README.md
-├── main_code.ipynb
 ├── ourResUnet.py            <-- Our Model's main file
 ├── pack_512_only.py         <-- Our script to select only 512x512 images
 ├── pack_tiles.py            <-- Script to tile image, mask pairs
